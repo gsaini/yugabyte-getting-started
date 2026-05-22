@@ -1,0 +1,106 @@
+# 3-node YugabyteDB cluster — 1 master + 1 tserver per node, RF=3.
+# Useful for experimenting with leader election, failover, and tablet distribution.
+
+x-yb-image: &yb-image yugabytedb/yugabyte:latest
+
+services:
+  yb-master-1:
+    image: *yb-image
+    container_name: yb-master-1
+    hostname: yb-master-1
+    command: >
+      bin/yb-master
+      --fs_data_dirs=/mnt/master
+      --master_addresses=yb-master-1:7100,yb-master-2:7100,yb-master-3:7100
+      --rpc_bind_addresses=yb-master-1:7100
+      --replication_factor=3
+    ports:
+      - "7000:7000"
+    volumes:
+      - master1:/mnt/master
+
+  yb-master-2:
+    image: *yb-image
+    container_name: yb-master-2
+    hostname: yb-master-2
+    command: >
+      bin/yb-master
+      --fs_data_dirs=/mnt/master
+      --master_addresses=yb-master-1:7100,yb-master-2:7100,yb-master-3:7100
+      --rpc_bind_addresses=yb-master-2:7100
+      --replication_factor=3
+    volumes:
+      - master2:/mnt/master
+
+  yb-master-3:
+    image: *yb-image
+    container_name: yb-master-3
+    hostname: yb-master-3
+    command: >
+      bin/yb-master
+      --fs_data_dirs=/mnt/master
+      --master_addresses=yb-master-1:7100,yb-master-2:7100,yb-master-3:7100
+      --rpc_bind_addresses=yb-master-3:7100
+      --replication_factor=3
+    volumes:
+      - master3:/mnt/master
+
+  yb-tserver-1:
+    image: *yb-image
+    container_name: yb-tserver-1
+    hostname: yb-tserver-1
+    depends_on: [yb-master-1, yb-master-2, yb-master-3]
+    command: >
+      bin/yb-tserver
+      --fs_data_dirs=/mnt/tserver
+      --tserver_master_addrs=yb-master-1:7100,yb-master-2:7100,yb-master-3:7100
+      --rpc_bind_addresses=yb-tserver-1:9100
+      --enable_ysql
+      --pgsql_proxy_bind_address=0.0.0.0:5433
+      --cql_proxy_bind_address=0.0.0.0:9042
+    ports:
+      - "5433:5433"
+      - "9042:9042"
+      - "9000:9000"
+    volumes:
+      - tserver1:/mnt/tserver
+
+  yb-tserver-2:
+    image: *yb-image
+    container_name: yb-tserver-2
+    hostname: yb-tserver-2
+    depends_on: [yb-master-1, yb-master-2, yb-master-3]
+    command: >
+      bin/yb-tserver
+      --fs_data_dirs=/mnt/tserver
+      --tserver_master_addrs=yb-master-1:7100,yb-master-2:7100,yb-master-3:7100
+      --rpc_bind_addresses=yb-tserver-2:9100
+      --enable_ysql
+      --pgsql_proxy_bind_address=0.0.0.0:5433
+      --cql_proxy_bind_address=0.0.0.0:9042
+    volumes:
+      - tserver2:/mnt/tserver
+
+  yb-tserver-3:
+    image: *yb-image
+    container_name: yb-tserver-3
+    hostname: yb-tserver-3
+    depends_on: [yb-master-1, yb-master-2, yb-master-3]
+    command: >
+      bin/yb-tserver
+      --fs_data_dirs=/mnt/tserver
+      --tserver_master_addrs=yb-master-1:7100,yb-master-2:7100,yb-master-3:7100
+      --rpc_bind_addresses=yb-tserver-3:9100
+      --enable_ysql
+      --pgsql_proxy_bind_address=0.0.0.0:5433
+      --cql_proxy_bind_address=0.0.0.0:9042
+    volumes:
+      - tserver3:/mnt/tserver
+
+volumes:
+  master1:
+  master2:
+  master3:
+  tserver1:
+  tserver2:
+  tserver3:

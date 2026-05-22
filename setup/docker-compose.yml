@@ -1,0 +1,25 @@
+services:
+  yugabyte:
+    image: yugabytedb/yugabyte:latest
+    container_name: yugabyte
+    hostname: yugabyte
+    command: >
+      bin/yugabyted start
+      --background=false
+      --advertise_address=yugabyte
+    ports:
+      - "5433:5433"   # YSQL
+      - "9042:9042"   # YCQL
+      - "7000:7000"   # Master UI
+      - "9000:9000"   # TServer UI
+      - "15433:15433" # yugabyted UI
+    volumes:
+      - yb-data:/root/var
+    healthcheck:
+      test: ["CMD", "bin/ysqlsh", "-h", "yugabyte", "-c", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  yb-data:
